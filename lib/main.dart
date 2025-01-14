@@ -46,18 +46,22 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<String> items = [];
+  List<FocusNode> focusNodes = [];
+
   final scrollController = ScrollController();
   final keys = GlobalKey<AnimatedListState>();
+  var lastFocusNode = FocusNode();
 
   void _addItem() {
-    items.add("");
+    items.add(Uuid().v4());
+    focusNodes.add(FocusNode());
     keys.currentState?.insertItem(items.length - 1, duration: Duration(milliseconds: 700));
   }
 
   void _removeItem(int pos) {
-    setState(() {
-      items.removeAt(pos);
-    });
+    items.removeAt(pos);
+    focusNodes.removeAt(pos);
+    keys.currentState?.removeItem(pos, (_, a) => Column());
   }
 
   void _updateItem(int pos, String text) {
@@ -66,7 +70,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    var lastFocusNode = FocusNode();
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -100,46 +103,57 @@ class _MyHomePageState extends State<MyHomePage> {
                   text: item
               );
 
-              FocusNode focusNode;
-
-              if (index == items.length - 1) {
-                focusNode = lastFocusNode;
-              } else {
-                focusNode = FocusNode();
-              }
-
-              return FadeTransition(
-                opacity: animation.drive(
-                    Tween<double>(begin: 0, end: 1)
-                        .chain(CurveTween(curve: Curves.ease))),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(
-                          left: 16,
-                          right: 16,
-                          top: 8,
-                          bottom: 8
+              return Dismissible(
+                key: ValueKey(item),
+                direction: DismissDirection.endToStart,
+                onDismissed: (_) {
+                  _removeItem(index);
+                },
+                background: Container(
+                  color: Colors.red,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(right: 16),
+                        child: Icon(Icons.delete),
                       ),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
+                    ],
+                  ),
+                ),
+                child: FadeTransition(
+                  opacity: animation.drive(
+                      Tween<double>(begin: 0, end: 1)
+                          .chain(CurveTween(curve: Curves.ease))),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(
+                            left: 16,
+                            right: 16,
+                            top: 8,
+                            bottom: 8
                         ),
-                        controller: controller,
-                        focusNode: focusNode,
-                        autofocus: index == items.length - 1,
-                        textInputAction: TextInputAction.next,
-                        onChanged: (String value) {
-                          _updateItem(index, value);
-                        },
-                      ) ,
-                    ),
-                    Divider(
-                      height: 1,
+                        child: TextField(
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                          ),
+                          controller: controller,
+                          focusNode: focusNodes[index],
+                          autofocus: index == items.length - 1,
+                          textInputAction: TextInputAction.next,
+                          onChanged: (String value) {
+                            _updateItem(index, value);
+                          },
+                        ) ,
+                      ),
+                      Divider(
+                        height: 1,
 
-                    )
-                  ],
-                )
+                      )
+                    ],
+                  )
+                ),
               );
             }
         )
@@ -155,7 +169,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 duration: Duration(milliseconds: 100),
                 curve: Curves.easeOut,
               ).then((_) {
-                lastFocusNode.requestFocus();
+                focusNodes[items.length - 1].requestFocus();
               });
             }
           });
