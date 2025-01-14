@@ -9,9 +9,10 @@ class ItemsViewModel extends ChangeNotifier {
 
   ItemsViewModel() {
     _state = ItemsUIState(items: [], isLoading: true);
+    _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load() {
     _state = _state.copyWith(isLoading: true);
     notifyListeners();
 
