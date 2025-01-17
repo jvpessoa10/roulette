@@ -30,9 +30,8 @@ class ItemsScreen extends StatelessWidget {
         ),
       ),
       body: BlocBuilder<ItemsBloc, ItemsUIState>(
-        buildWhen: (previous, current) {
-          return previous.items != current.items;
-        },
+        buildWhen: (previous, current) =>
+            previous.items.length != current.items.length,
         builder: (context, state) {
           return Center(
             // Center is a layout widget. It takes a single child and positions it

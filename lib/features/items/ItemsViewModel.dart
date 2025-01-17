@@ -1,5 +1,3 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'ItemsUIState.dart';
 
@@ -17,7 +15,7 @@ final class ItemTextChanged extends ItemsEvent {
 
 class ItemsBloc extends Bloc<ItemsEvent, ItemsUIState> {
   ItemsBloc() : super(ItemsUIState(items: [
-    for (var i = 0; i < 10000; i++) Item(text: "Item $i")
+    for (var i = 0; i < 3; i++) Item(text: "Item $i")
   ])) {
     on<AddItemPressed>(_onAddItemPressed);
     on<DismissedItem>(_onDismissedItem);
@@ -27,7 +25,7 @@ class ItemsBloc extends Bloc<ItemsEvent, ItemsUIState> {
   void _onAddItemPressed(event, emit) {
     emit(
         state.copyWith(
-            items: state.items..add(Item(text: "")),
+            items: [...state.items, Item(text: "")],
             focusedItem: state.items.length - 1
         )
     );
@@ -36,17 +34,19 @@ class ItemsBloc extends Bloc<ItemsEvent, ItemsUIState> {
   void _onDismissedItem(DismissedItem event, emit) {
     emit(
         state.copyWith(
-            items: state.items..removeAt(event.pos),
+            items: [...state.items]..removeAt(event.pos),
         )
     );
   }
 
   void _onItemTextChange(ItemTextChanged event, emit) {
+    Item newItem = state.items[event.pos].copyWith(text: event.text);
+    List<Item> newList = [...state.items];
+    newList[event.pos] = newItem;
+
     emit(
         state.copyWith(
-            items: state.items..[event.pos] =
-            state.items[event.pos]
-                .copyWith(text: event.text),
+            items: newList
         )
     );
   }
