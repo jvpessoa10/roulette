@@ -1,28 +1,33 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_command/flutter_command.dart';
-
+import 'package:flutter/foundation.dart';
 import 'ItemsUIState.dart';
 
-class ItemsViewModel extends ChangeNotifier {
-  ItemsUIState _state;
-  ItemsUIState get state => _state;
+class ItemsViewModel extends ValueNotifier<ItemsUIState> {
+  ItemsViewModel() : super(ItemsUIState(items: []));
 
-  ItemsViewModel() {
-    _state = ItemsUIState(items: [], isLoading: true);
-    _load();
+  void addItem() {
+    value = value.copyWith(
+      items: value.items..add(Item(text: "")),
+      focusedItem: value.items.length - 1
+    );
   }
 
-  Future<void> _load() {
-    _state = _state.copyWith(isLoading: true);
-    notifyListeners();
+  void removeItem(pos) {
+    value = value.copyWith(
+        items: value.items..removeAt(pos),
+    );
+  }
 
-    return Future.delayed(const Duration(seconds: 2), () {
-        _state = _state.copyWith(
-          items: [
-            for (var i = 0; i < 20; i++) 'Item $i',
-          ]
-        );
-        notifyListeners();
-    } );
+  void updateItem(int pos, String text) {
+    var updatedItem = value.items[pos].copyWith(text: text);
+    value = value.copyWith(
+        items: value.items..[pos] = updatedItem,
+    );
+  }
+
+  void onItemFocus() {
+    value = value.copyWith(
+        focusedItem: null
+    );
   }
 }
