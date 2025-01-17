@@ -29,14 +29,17 @@ class Item {
   final String id;
 
   Item({
+    required this.id,
     required this.text,
-  }):id = Uuid().v4();
+  });
 
   copyWith({
     String? text,
+    String? id,
   }) {
     return Item(
       text: text ?? this.text,
+      id: id ?? this.id,
     );
   }
 

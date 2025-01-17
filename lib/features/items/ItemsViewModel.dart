@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
 import 'ItemsUIState.dart';
 
 sealed class ItemsEvent {}
@@ -15,7 +16,7 @@ final class ItemTextChanged extends ItemsEvent {
 
 class ItemsBloc extends Bloc<ItemsEvent, ItemsUIState> {
   ItemsBloc() : super(ItemsUIState(items: [
-    for (var i = 0; i < 3; i++) Item(text: "Item $i")
+    for (var i = 0; i < 0; i++) Item(text: "Item $i", id: Uuid().v4())
   ])) {
     on<AddItemPressed>(_onAddItemPressed);
     on<DismissedItem>(_onDismissedItem);
@@ -25,8 +26,8 @@ class ItemsBloc extends Bloc<ItemsEvent, ItemsUIState> {
   void _onAddItemPressed(event, emit) {
     emit(
         state.copyWith(
-            items: [...state.items, Item(text: "")],
-            focusedItem: state.items.length - 1
+            items: [...state.items, Item(text: "", id: Uuid().v4())],
+            focusedItem: state.items.length
         )
     );
   }

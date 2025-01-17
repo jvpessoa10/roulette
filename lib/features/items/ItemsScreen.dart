@@ -8,6 +8,8 @@ import 'ItemsUIState.dart';
 class ItemsScreen extends StatelessWidget {
   static const String routeName = '/items';
 
+  const ItemsScreen({super.key});
+
   static Uri uri() {
     return Uri(path: routeName);
   }
@@ -24,14 +26,15 @@ class ItemsScreen extends StatelessWidget {
     // TODO: implement build
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Theme
+            .of(context)
+            .colorScheme
+            .inversePrimary,
         title: Text(
           "Add Items",
         ),
       ),
       body: BlocBuilder<ItemsBloc, ItemsUIState>(
-        buildWhen: (previous, current) =>
-            previous.items.length != current.items.length,
         builder: (context, state) {
           return Center(
             // Center is a layout widget. It takes a single child and positions it
@@ -58,7 +61,7 @@ class ItemsScreen extends StatelessWidget {
 
   Widget buildItemTile(BuildContext context, Item item, int index) {
     return Dismissible(
-      key: Key(item.id),
+      key: ValueKey(item.id),
       direction: DismissDirection.endToStart,
       onDismissed: (_) {
         context.read<ItemsBloc>().add(DismissedItem(pos: index));
@@ -89,7 +92,7 @@ class ItemsScreen extends StatelessWidget {
                   context
                       .read<ItemsBloc>()
                       .add(ItemTextChanged(pos: index, text: text));
-                }),
+                })
           ),
           Divider(
             height: 1,
