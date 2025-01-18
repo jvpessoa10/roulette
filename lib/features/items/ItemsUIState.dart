@@ -1,5 +1,3 @@
-import 'package:uuid/uuid.dart';
-
 class ItemsUIState {
   final List<Item> items;
   final bool isLoading;
@@ -8,7 +6,7 @@ class ItemsUIState {
   ItemsUIState({
     required this.items,
     this.isLoading = true,
-    this.focusedItem,
+    this.focusedItem = null,
   });
 
   ItemsUIState copyWith({

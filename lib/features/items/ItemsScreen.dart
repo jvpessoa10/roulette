@@ -8,7 +8,7 @@ import 'ItemsUIState.dart';
 class ItemsScreen extends StatelessWidget {
   static const String routeName = '/items';
 
-  const ItemsScreen({super.key});
+  ItemsScreen({super.key});
 
   static Uri uri() {
     return Uri(path: routeName);
@@ -26,10 +26,7 @@ class ItemsScreen extends StatelessWidget {
     // TODO: implement build
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme
-            .of(context)
-            .colorScheme
-            .inversePrimary,
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(
           "Add Items",
         ),
@@ -37,16 +34,13 @@ class ItemsScreen extends StatelessWidget {
       body: BlocBuilder<ItemsBloc, ItemsUIState>(
         builder: (context, state) {
           return Center(
-            // Center is a layout widget. It takes a single child and positions it
-            // in the middle of the parent
               child: Form(
-                child: ListView(
-                    reverse: false,
-                    children: [
-                      for (var index = 0; index < state.items.length; index++)
-                        buildItemTile(context, state.items[index], index)
-                    ]),
-              ));
+            child: ListView(reverse: false, children: [
+              for (var index = 0; index < state.items.length; index++)
+                buildItemTile(context, state.items[index], index,
+                    index == state.focusedItem)
+            ]),
+          ));
         },
       ),
       floatingActionButton: FloatingActionButton(
@@ -59,7 +53,8 @@ class ItemsScreen extends StatelessWidget {
     );
   }
 
-  Widget buildItemTile(BuildContext context, Item item, int index) {
+  Widget buildItemTile(
+      BuildContext context, Item item, int index, bool focused) {
     return Dismissible(
       key: ValueKey(item.id),
       direction: DismissDirection.endToStart,
@@ -81,24 +76,62 @@ class ItemsScreen extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.only(
-                left: 16, right: 16, top: 8, bottom: 8),
-            child: TextFormField(
-                initialValue: item.text,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                ),
+            padding: EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
+            child: BaseTextField(
+                initialText: item.text,
+                focused: focused,
                 onChanged: (text) {
                   context
                       .read<ItemsBloc>()
                       .add(ItemTextChanged(pos: index, text: text));
-                })
+                }),
           ),
           Divider(
             height: 1,
           )
         ],
       ),
+    );
+  }
+}
+
+class BaseTextField extends StatefulWidget {
+  const BaseTextField(
+      {super.key,
+      required this.initialText,
+      required this.focused,
+      required this.onChanged});
+
+  final String initialText;
+  final bool focused;
+  final void Function(String) onChanged;
+
+  @override
+  State<BaseTextField> createState() => _BaseTextFieldState();
+}
+
+class _BaseTextFieldState extends State<BaseTextField> {
+
+  final focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.focused) {
+      focusNode.requestFocus();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+        focusNode: focusNode,
+        initialValue: widget.initialText,
+        decoration: InputDecoration(
+          border: InputBorder.none,
+        ),
+        onChanged: widget.onChanged
     );
   }
 }
