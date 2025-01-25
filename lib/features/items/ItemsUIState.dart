@@ -5,9 +5,15 @@ class ItemsUIState {
 
   ItemsUIState({
     required this.items,
-    this.isLoading = true,
-    this.focusedItem = null,
+    required this.isLoading,
+    this.focusedItem,
   });
+
+  factory ItemsUIState.initial() {
+    return ItemsUIState(
+      items: [], isLoading: true
+    );
+  }
 
   ItemsUIState copyWith({
     List<Item>? items,

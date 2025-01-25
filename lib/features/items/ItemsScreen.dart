@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:roulette/features/items/ItemsViewModel.dart';
+import 'package:roulette/features/items/ItemsBloc.dart';
 
+import 'ItemsEvent.dart';
 import 'ItemsUIState.dart';
 
 class ItemsScreen extends StatelessWidget {
   static const String routeName = '/items';
 
-  ItemsScreen({super.key});
+  const ItemsScreen({super.key});
 
   static Uri uri() {
     return Uri(path: routeName);
@@ -16,7 +17,7 @@ class ItemsScreen extends StatelessWidget {
 
   static Widget goRouterBuilder(BuildContext context, GoRouterState state) {
     return BlocProvider(
-      create: (_) => ItemsBloc(),
+      create: (_) => ItemsBloc()..add(Init()),
       child: ItemsScreen(),
     );
   }
@@ -30,17 +31,27 @@ class ItemsScreen extends StatelessWidget {
         title: Text(
           "Add Items",
         ),
+        actions: [
+        IconButton(
+             icon: const Icon(Icons.check),
+             tooltip: 'Confirm',
+             onPressed: () {
+               // handle the press
+             },
+           ),
+        ],
       ),
       body: BlocBuilder<ItemsBloc, ItemsUIState>(
         builder: (context, state) {
-          return Center(
-              child: Form(
-            child: ListView(reverse: false, children: [
-              for (var index = 0; index < state.items.length; index++)
-                buildItemTile(context, state.items[index], index,
-                    index == state.focusedItem)
-            ]),
-          ));
+          if (state.isLoading) {
+            return buildLoading();
+          } else {
+            if (state.items.isEmpty) {
+              return buildEmpty();
+            } else {
+              return buildLoaded(context, state);
+            }
+          }
         },
       ),
       floatingActionButton: FloatingActionButton(
@@ -51,6 +62,29 @@ class ItemsScreen extends StatelessWidget {
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  Widget buildLoading() {
+    return Center(
+      child: CircularProgressIndicator(),
+    );
+  }
+
+  Widget buildEmpty() {
+    return Center(
+      child: Text("Click on the \"+\" button to add an item."),
+    );
+  }
+
+  Widget buildLoaded(BuildContext context, ItemsUIState state) {
+    return Center(
+        child: Form(
+          child: ListView(reverse: false, children: [
+            for (var index = 0; index < state.items.length; index++)
+              buildItemTile(context, state.items[index], index,
+                  index == state.focusedItem)
+          ]),
+        ));
   }
 
   Widget buildItemTile(
