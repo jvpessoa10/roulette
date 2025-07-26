@@ -45,15 +45,17 @@ class MyGame extends FlameGame with PanDetector {
   late Vector2 screenSize;
   late RouletteCenter roulette;
   late Vector2 center;
+  Vector2? lastPanDelta;
+
   @override
   Future<void> onLoad() async {
     super.onLoad();
-    // add(RectangleComponent(
-    //     paint: Paint()..color = Color(0xC8282828),
-    //     size: Vector2.all(1000),
-    //     anchor: Anchor.center
-    // )
-    // );
+    add(RectangleComponent(
+        paint: Paint()..color = Color(0xC8282828),
+        size: Vector2.all(1000),
+        anchor: Anchor.center
+    )
+    );
 
 
     roulette = RouletteCenter(
@@ -71,8 +73,15 @@ class MyGame extends FlameGame with PanDetector {
   }
 
   @override
+  void onPanStart(DragStartInfo info) {
+    // TODO: implement onPanStart
+    super.onPanStart(info);
+    lastPanDelta = null; // Reset last pan delta
+    roulette.angularVelocity = 0.0; // Stop any ongoing rotation
+  }
+
+  @override
   void onPanUpdate(DragUpdateInfo info) {
-    // TODO: implement onPanUpdate
     final previous = info.eventPosition.global - info.delta.global;
     final current = info.eventPosition.global;
 
@@ -85,12 +94,22 @@ class MyGame extends FlameGame with PanDetector {
     final angle = atan2(cross, dot); // Signed angle (in radians)
 
     roulette.angle += angle;
+    lastPanDelta = info.delta.global; 
   }
 
   @override
   void onPanEnd(DragEndInfo info) {
     // TODO: implement onPanEnd
     super.onPanEnd(info);
+    if (lastPanDelta != null) {
+    // Use lastEventPosition instead of eventPosition
+    final touchVector = info.raw.globalPosition;
+    final perp = Vector2(-touchVector.dy, touchVector.dx);
+    final rotational = lastPanDelta!.dot(perp.normalized());
+    final velocity = rotational / 0.1;
+    roulette.angularVelocity = velocity;
+  }
+  lastPanDelta = null;
   }
 }
 
@@ -102,11 +121,8 @@ class RouletteCenter extends PositionComponent {
       anchor: Anchor.center
   );
 
+  final items = 6;
 
-  var elapsedTime = 0.0;
-
-  final numItems = 15;
-  
   final colors = [
     Color(0xFF8A0000),
     Color(0xFFFFECB4)
@@ -114,67 +130,35 @@ class RouletteCenter extends PositionComponent {
 
   final lastItemColor = Color(0xFF369D53);
 
+  double angularVelocity = 0.0;
+
   @override
   FutureOr<void> onLoad() {
+    for (int i = 0; i < items; i++) {
+      final startAngle = (2 * pi / items) * i;
+      final sweepAngle = (2 * pi / items);
+      final color = (i == items - 1 && items % 2 == 0) ? lastItemColor : colors[i % colors.length];
 
-    final spinEffect = RotateEffect.by(
-        tau * 100,
-        EffectController(
-            duration: 10,
-            curve: Curves.easeOutQuint,
-        )
-    );
-    // add(spinEffect);
+      final pizzaSlice = PizzaSliceComponent(
+        radius: 200,
+        startAngle: startAngle,
+        sweepAngle: sweepAngle,
+        color: color,
+        position: Vector2(0, 0),
+      );
 
-    final pizzaSlice = PizzaSliceComponent(
-      radius: 200,
-      startAngle: pi/2,
-      sweepAngle: (2*pi) / 6,
-      position: Vector2(0, 0),
-    );
-
-    add(pizzaSlice);
+      add(pizzaSlice);
+    }
   }
 
   @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-    if (true) {
-      // final rect = Rect.fromCenter(center: Offset.zero, width: 400, height: 400);
-      //
-      // for (var i =0; i < numItems; i++) {
-      //   final startAngle = (tau / numItems) * (i + 1);
-      //   final sweepAngle = tau / numItems;
-      //
-      //   // For a list with an even number of items,
-      //   // the last item should be a different color to avoid two items
-      //   // with the same color next to each other
-      //   final isLastItem = i == numItems - 1;
-      //   final evenNumItems = numItems % 2 != 0;
-      //   final color = (isLastItem && evenNumItems) ? lastItemColor : colors[i % colors.length];
-      //
-      //   final itemPaint = Paint()
-      //     ..shader = RadialGradient(
-      //       colors: [color.brighten(0.1), color.darken(0.1)],
-      //       stops: <double>[0.1, 1],
-      //     ).createShader(rect);
-      //
-      //   canvas.drawArc(rect, startAngle, sweepAngle, true, itemPaint);
-      // }
-      //
-      // final outerRect = Rect.fromCenter(center: Offset.zero, width: 410, height: 410);
-      // final border = Paint()
-      //   ..color = Color(0xFFFFECB4)
-      //   ..style = PaintingStyle.stroke
-      //   ..strokeWidth = 10;
-      //
-      // final border2 = Paint()
-      //   ..color = Color(0xFF8A0000)
-      //   ..style = PaintingStyle.stroke
-      //   ..strokeWidth = 5;
-      //
-      // canvas.drawArc(outerRect, 0, tau, false, border);
-      // canvas.drawArc(outerRect, 0, tau, false, border2);
+  void update(double dt) {
+    super.update(dt);
+    if (angularVelocity.abs() > 0.01) {
+      angle += angularVelocity * dt;
+      angularVelocity *= 0.98; // Friction
+    } else {
+      angularVelocity = 0.0;
     }
   }
 }
