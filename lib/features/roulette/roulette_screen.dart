@@ -48,15 +48,11 @@ class MyGame extends FlameGame with PanDetector {
   Vector2? lastPanDelta;
 
   @override
+  Color backgroundColor() => const Color(0xFF222222);
+
+  @override
   Future<void> onLoad() async {
     super.onLoad();
-    add(RectangleComponent(
-        paint: Paint()..color = Color(0xC8282828),
-        size: Vector2.all(1000),
-        anchor: Anchor.center
-    )
-    );
-
 
     roulette = RouletteCenter(
       position: center
@@ -129,6 +125,15 @@ class RouletteCenter extends PositionComponent {
 
   @override
   FutureOr<void> onLoad() {
+
+    add(DonutComponent(
+      outerRadius: 210,
+      innerRadius: 200,
+      anchor: Anchor.center,
+      position: Vector2(0, 0),
+      paint: Paint()..color = Color.fromARGB(255, 64, 46, 30),
+    ));
+
     for (int i = 0; i < items; i++) {
       final startAngle = (2 * pi / items) * i;
       final sweepAngle = (2 * pi / items);
@@ -162,16 +167,15 @@ class PizzaSliceComponent extends PositionComponent {
   final double radius;
   final double startAngle; // in radians
   final double sweepAngle; // in radians
-  final Paint paintStyle;
+  final Color color;
 
   PizzaSliceComponent({
     required this.radius,
     required this.startAngle,
     required this.sweepAngle,
-    Color color = const Color(0xFFFFD700), // Pizza yellow
+    Color this.color = const Color(0xFFFFD700), // Pizza yellow
     Vector2? position,
-  })  : paintStyle = Paint()..color = color,
-        super( );
+  }) : super();
 
   @override
   FutureOr<void> onLoad() {
@@ -201,19 +205,57 @@ class PizzaSliceComponent extends PositionComponent {
     super.render(canvas);
 
     final rect = Rect.fromCircle(center: Offset(0, 0), radius: radius);
+
+    final gradient = RadialGradient(
+      radius: 0.8,
+      focalRadius: 0.01,
+      colors: [
+        color,
+        color.withAlpha(10),
+      ]
+    );
+
+    final paintStyle = Paint()
+          ..shader = gradient.createShader(rect);
+      
+
+    
     canvas.drawArc(rect, startAngle, sweepAngle, true, paintStyle);
+  }
+}
 
-    // final path = Path()
-    //   ..moveTo(0, 0) // Center of the circle
-    //   ..arcTo(
-    //     Rect.fromCircle(center: Offset(0, 0), radius: radius),
-    //     startAngle,
-    //     sweepAngle,
-    //     false,
-    //   )
-    //   ..close();
-    // canvas.drawPath(path, paintStyle);
+class DonutComponent extends PositionComponent {
+  final double outerRadius;
+  final double innerRadius;
+  final Paint paint;
 
+  DonutComponent({
+    required this.outerRadius,
+    required this.innerRadius,
+    required this.paint,
+    Vector2? position,
+    Anchor anchor = Anchor.center,
+  }) : super(
+    position: position ?? Vector2.zero(),
+    anchor: anchor,
+  );
 
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    // Draw the outer circle (filled)
+    canvas.drawCircle(Offset.zero, outerRadius, paint);
+
+    // Draw the border
+    final borderPaint = Paint()
+      ..color = const Color.fromARGB(255, 89, 69, 50) // or any border color you want
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2; // Adjust thickness as needed
+    canvas.drawCircle(Offset.zero, outerRadius, borderPaint);
+
+    // Draw the inner circle with a clear paint to "cut out" the center
+    final clearPaint = Paint()
+      ..blendMode = BlendMode.clear;
+    canvas.drawCircle(Offset.zero, innerRadius, clearPaint);
   }
 }
