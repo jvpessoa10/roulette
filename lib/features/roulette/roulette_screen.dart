@@ -82,24 +82,19 @@ class MyGame extends FlameGame with PanDetector {
 
   @override
   void onPanUpdate(DragUpdateInfo info) {
-    final previous = info.eventPosition.global - info.delta.global;
     final current = info.eventPosition.global;
+    print('onPanUpdate: current: ${current}');
+    final previous = current - info.delta.global;
 
     final from = previous - center;
     final to = current - center;
 
-    final double dot = from.dot(to);
-    final double cross = from.cross(to);
-
-    final angle = atan2(cross, dot); // Signed angle (in radians)
-
-    roulette.angle += angle;
-    lastPanDelta = info.delta.global; 
+    roulette.angle += from.angleToSigned(to);
+    lastPanDelta = to - from; // Store the delta for use in onPanEnd
   }
 
   @override
   void onPanEnd(DragEndInfo info) {
-    // TODO: implement onPanEnd
     super.onPanEnd(info);
     if (lastPanDelta != null) {
     // Use lastEventPosition instead of eventPosition
@@ -121,7 +116,7 @@ class RouletteCenter extends PositionComponent {
       anchor: Anchor.center
   );
 
-  final items = 6;
+  final items = 12;
 
   final colors = [
     Color(0xFF8A0000),
