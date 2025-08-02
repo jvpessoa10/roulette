@@ -43,9 +43,7 @@ class RouletteScreen extends StatelessWidget {
 
 class MyGame extends FlameGame with PanDetector {
   late Vector2 screenSize;
-  late RouletteCenter roulette;
   late Vector2 center;
-  Vector2? lastPanDelta;
 
   @override
   Color backgroundColor() => const Color(0xFF222222);
@@ -53,54 +51,71 @@ class MyGame extends FlameGame with PanDetector {
   @override
   Future<void> onLoad() async {
     super.onLoad();
-
-    roulette = RouletteCenter(
+    add(Roulette(
       position: center
-    );
-    add(roulette);
+    ));
   }
 
   @override
   void onGameResize(Vector2 size) {
-    // TODO: implement onGameResize
     super.onGameResize(size);
     screenSize = size;
     center = screenSize/2;
   }
+}
+
+class Roulette extends PositionComponent with DragCallbacks {
+
+  late RouletteCenter rouletteCenter;
+
+  Roulette({
+    required Vector2 position,
+  }) : super(
+      position: position
+  );
 
   @override
-  void onPanStart(DragStartInfo info) {
-    // TODO: implement onPanStart
-    super.onPanStart(info);
-    lastPanDelta = null; // Reset last pan delta
-    roulette.angularVelocity = 0.0; // Stop any ongoing rotation
+  FutureOr<void> onLoad() {
+    rouletteCenter = RouletteCenter(
+      position: Vector2(0, 0),
+    );
+
+
+    add(DonutComponent(
+      outerRadius: 210,
+      innerRadius: 200,
+      position: Vector2(0, 0),
+      paint: Paint()..color = Color.fromARGB(255, 64, 46, 30),
+    ));
+    add(rouletteCenter);
+
+    
+    add(TriangleComponent(position: Vector2(0, -200)));
   }
 
   @override
-  void onPanUpdate(DragUpdateInfo info) {
-    final current = info.eventPosition.global;
-    print('onPanUpdate: current: ${current}');
-    final previous = current - info.delta.global;
+  void onDragStart(DragStartEvent event) {
+    super.onDragStart(event);
+    rouletteCenter.angularVelocity = 0.0;
+  }
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    // TODO: implement onDragUpdate
+    final current = event.localEndPosition;
+    final previous = current - event.localDelta;
 
     final from = previous - center;
     final to = current - center;
 
-    roulette.angle += from.angleToSigned(to);
-    lastPanDelta = to - from; // Store the delta for use in onPanEnd
+    rouletteCenter.angle += from.angleToSigned(to);
   }
 
   @override
-  void onPanEnd(DragEndInfo info) {
-    super.onPanEnd(info);
-    if (lastPanDelta != null) {
-    // Use lastEventPosition instead of eventPosition
-    final touchVector = info.raw.globalPosition;
-    final perp = Vector2(-touchVector.dy, touchVector.dx);
-    final rotational = lastPanDelta!.dot(perp.normalized());
-    final velocity = rotational / 0.1;
-    roulette.angularVelocity = velocity;
-  }
-  lastPanDelta = null;
+  void onDragEnd(DragEndEvent event) {
+    // TODO: implement onDragEnd
+    super.onDragEnd(event);
+    rouletteCenter.angularVelocity = event.velocity.x;
   }
 }
 
@@ -109,7 +124,6 @@ class RouletteCenter extends PositionComponent {
     required Vector2 position
   }): super(
       position: position,
-      anchor: Anchor.center
   );
 
   final items = 12;
@@ -126,14 +140,6 @@ class RouletteCenter extends PositionComponent {
   @override
   FutureOr<void> onLoad() {
 
-    add(DonutComponent(
-      outerRadius: 210,
-      innerRadius: 200,
-      anchor: Anchor.center,
-      position: Vector2(0, 0),
-      paint: Paint()..color = Color.fromARGB(255, 64, 46, 30),
-    ));
-
     for (int i = 0; i < items; i++) {
       final startAngle = (2 * pi / items) * i;
       final sweepAngle = (2 * pi / items);
@@ -148,6 +154,7 @@ class RouletteCenter extends PositionComponent {
       );
 
       add(pizzaSlice);
+      
     }
   }
 
@@ -218,8 +225,6 @@ class PizzaSliceComponent extends PositionComponent {
     final paintStyle = Paint()
           ..shader = gradient.createShader(rect);
       
-
-    
     canvas.drawArc(rect, startAngle, sweepAngle, true, paintStyle);
   }
 }
@@ -258,4 +263,20 @@ class DonutComponent extends PositionComponent {
       ..blendMode = BlendMode.clear;
     canvas.drawCircle(Offset.zero, innerRadius, clearPaint);
   }
+}
+
+class TriangleComponent extends PolygonComponent {
+  TriangleComponent({
+    required Vector2 position,
+    double size = 20.0,
+    Color color = const Color.fromARGB(255, 230, 171, 68),
+  }) : super(
+          [
+            Vector2(0, -size),
+            Vector2(-size, size),
+            Vector2(size, size),
+          ],
+          position: position,
+          paint: Paint()..color = color,
+        );
 }
