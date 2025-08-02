@@ -41,9 +41,7 @@ class RouletteScreen extends StatelessWidget {
   }
 }
 
-class MyGame extends FlameGame with PanDetector {
-  late Vector2 screenSize;
-  late Vector2 center;
+class MyGame extends FlameGame {
 
   @override
   Color backgroundColor() => const Color(0xFF222222);
@@ -52,79 +50,54 @@ class MyGame extends FlameGame with PanDetector {
   Future<void> onLoad() async {
     super.onLoad();
     add(Roulette(
-      position: center
-    ));
-  }
-
-  @override
-  void onGameResize(Vector2 size) {
-    super.onGameResize(size);
-    screenSize = size;
-    center = screenSize/2;
+      radius: 200,
+      position: size/2,
+    )..debugMode = true);
   }
 }
 
-class Roulette extends PositionComponent with DragCallbacks {
+class Roulette extends PositionComponent {
 
   late RouletteCenter rouletteCenter;
 
+  double _radius;
+
   Roulette({
-    required Vector2 position,
-  }) : super(
-      position: position
-  );
+    required double radius,
+    Vector2? position
+  }) : 
+      _radius = radius,
+      super(position: position);
 
   @override
   FutureOr<void> onLoad() {
-    rouletteCenter = RouletteCenter(
-      position: Vector2(0, 0),
-    );
-
-
     add(DonutComponent(
       outerRadius: 210,
       innerRadius: 200,
-      position: Vector2(0, 0),
       paint: Paint()..color = Color.fromARGB(255, 64, 46, 30),
-    ));
+    )..debugMode = true);
+
+    rouletteCenter = RouletteCenter(
+      radius: 200
+    )..debugMode = true;
     add(rouletteCenter);
 
     
-    add(TriangleComponent(position: Vector2(0, -200)));
+    add(
+      TriangleComponent(position: Vector2(size.x/2, -_radius)));
   }
 
-  @override
-  void onDragStart(DragStartEvent event) {
-    super.onDragStart(event);
-    rouletteCenter.angularVelocity = 0.0;
-  }
-
-  @override
-  void onDragUpdate(DragUpdateEvent event) {
-    // TODO: implement onDragUpdate
-    final current = event.localEndPosition;
-    final previous = current - event.localDelta;
-
-    final from = previous - center;
-    final to = current - center;
-
-    rouletteCenter.angle += from.angleToSigned(to);
-  }
-
-  @override
-  void onDragEnd(DragEndEvent event) {
-    // TODO: implement onDragEnd
-    super.onDragEnd(event);
-    rouletteCenter.angularVelocity = event.velocity.x;
-  }
 }
 
-class RouletteCenter extends PositionComponent {
+class RouletteCenter extends PositionComponent with DragCallbacks {
+
+  double _radius;
+
   RouletteCenter({
-    required Vector2 position
-  }): super(
-      position: position,
-  );
+    required double radius
+  }): 
+      _radius = radius,
+      super(size:Vector2.all(radius * 2), anchor: Anchor.center);
 
   final items = 12;
 
@@ -146,15 +119,46 @@ class RouletteCenter extends PositionComponent {
       final color = (i == items - 1 && items % 2 == 0) ? lastItemColor : colors[i % colors.length];
 
       final pizzaSlice = PizzaSliceComponent(
-        radius: 200,
+        radius: _radius,
         startAngle: startAngle,
         sweepAngle: sweepAngle,
         color: color,
-        position: Vector2(0, 0),
+        position: size/2
       );
 
       add(pizzaSlice);
-      
+    }
+
+  }
+
+  @override
+  void onDragStart(DragStartEvent event) {
+    super.onDragStart(event);
+    angularVelocity = 0.0;
+    print("onDragStart");
+  }
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    // TODO: implement onDragUpdate
+    final current = event.localEndPosition;
+    final previous = current - event.localDelta;
+
+    final from = previous - size/2;
+    final to = current - size/2;
+
+    angle += from.angleToSigned(to);
+  }
+
+  @override
+  void onDragEnd(DragEndEvent event) {
+    // TODO: implement onDragEnd
+    super.onDragEnd(event);
+    
+    if (event.velocity.x >= event.velocity.y) {
+      angularVelocity = event.velocity.x ;
+    } else {
+      angularVelocity = event.velocity.y ;
     }
   }
 
@@ -181,8 +185,8 @@ class PizzaSliceComponent extends PositionComponent {
     required this.startAngle,
     required this.sweepAngle,
     Color this.color = const Color(0xFFFFD700), // Pizza yellow
-    Vector2? position,
-  }) : super();
+    Vector2? position
+  }) : super(position: position, anchor: Anchor.centerLeft);
 
   @override
   FutureOr<void> onLoad() {
@@ -269,14 +273,15 @@ class TriangleComponent extends PolygonComponent {
   TriangleComponent({
     required Vector2 position,
     double size = 20.0,
-    Color color = const Color.fromARGB(255, 230, 171, 68),
+    Color color = const Color.fromARGB(255, 103, 84, 51),
   }) : super(
           [
-            Vector2(0, -size),
-            Vector2(-size, size),
-            Vector2(size, size),
+            Vector2(0, size),            // Tip (bottom)
+            Vector2(-size, -size),       // Top left
+            Vector2(size, -size),        // Top right
           ],
           position: position,
           paint: Paint()..color = color,
+          anchor: Anchor.center,
         );
 }
