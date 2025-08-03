@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
@@ -41,7 +42,7 @@ class RouletteScreen extends StatelessWidget {
   }
 }
 
-class MyGame extends FlameGame {
+class MyGame extends FlameGame with HasCollisionDetection {
 
   @override
   Color backgroundColor() => const Color(0xFF222222);
@@ -52,11 +53,11 @@ class MyGame extends FlameGame {
     add(Roulette(
       radius: 200,
       position: size/2,
-    )..debugMode = true);
+    ));
   }
 }
 
-class Roulette extends PositionComponent {
+class Roulette extends PositionComponent with HasCollisionDetection {
 
   late RouletteCenter rouletteCenter;
 
@@ -75,21 +76,20 @@ class Roulette extends PositionComponent {
       outerRadius: 210,
       innerRadius: 200,
       paint: Paint()..color = Color.fromARGB(255, 64, 46, 30),
-    )..debugMode = true);
+    ));
 
     rouletteCenter = RouletteCenter(
       radius: 200
-    )..debugMode = true;
+    );
     add(rouletteCenter);
 
     
     add(
       TriangleComponent(position: Vector2(size.x/2, -_radius)));
   }
-
 }
 
-class RouletteCenter extends PositionComponent with DragCallbacks {
+class RouletteCenter extends PositionComponent with DragCallbacks, CollisionCallbacks {
 
   double _radius;
 
@@ -112,7 +112,7 @@ class RouletteCenter extends PositionComponent with DragCallbacks {
 
   @override
   FutureOr<void> onLoad() {
-
+    debugMode = true;
     for (int i = 0; i < items; i++) {
       final startAngle = (2 * pi / items) * i;
       final sweepAngle = (2 * pi / items);
@@ -123,12 +123,11 @@ class RouletteCenter extends PositionComponent with DragCallbacks {
         startAngle: startAngle,
         sweepAngle: sweepAngle,
         color: color,
-        position: size/2
+        rouletteCenter: size/2
       );
 
       add(pizzaSlice);
     }
-
   }
 
   @override
@@ -174,25 +173,30 @@ class RouletteCenter extends PositionComponent with DragCallbacks {
   }
 }
 
-class PizzaSliceComponent extends PositionComponent {
+class PizzaSliceComponent extends PositionComponent with CollisionCallbacks {
   final double radius;
   final double startAngle; // in radians
   final double sweepAngle; // in radians
   final Color color;
+  late Vector2 rouletteCenter;
+  final String tileText = 'Roulette${Random().nextInt(100)}';
 
   PizzaSliceComponent({
     required this.radius,
     required this.startAngle,
     required this.sweepAngle,
-    Color this.color = const Color(0xFFFFD700), // Pizza yellow
-    Vector2? position
-  }) : super(position: position, anchor: Anchor.centerLeft);
+    required this.rouletteCenter,
+    Color this.color = const Color(0xFFFFD700),
+  }) : super();
 
   @override
   FutureOr<void> onLoad() {
+    debugMode = true;
+    
     // TODO: implement onLoad
     final text = TextBoxComponent(
-      text: 'asdftasdsd',
+      text: tileText,
+      position: rouletteCenter,
       boxConfig: TextBoxConfig(
         maxWidth: radius,
         margins: EdgeInsets.fromLTRB(radius/2, 0, 0, 0),
@@ -209,13 +213,29 @@ class PizzaSliceComponent extends PositionComponent {
     );
 
     add(text); // inside onLoad or constructor
+
+     // Point at start of arc
+    final Vector2 p1 = rouletteCenter + Vector2(cos(startAngle), sin(startAngle)) * radius;
+
+    // Point at end of arc
+    final Vector2 p2 = rouletteCenter + Vector2(cos(startAngle + sweepAngle), sin(startAngle + sweepAngle)) * radius;
+
+    final hitbox = PolygonHitbox(
+      [
+        rouletteCenter.clone(),
+        p1,
+        p2,
+      ],
+      anchor: Anchor.center
+    )..debugMode = true;
+    add(hitbox);
   }
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
 
-    final rect = Rect.fromCircle(center: Offset(0, 0), radius: radius);
+    final rect = Rect.fromCircle(center: Offset(rouletteCenter.x, rouletteCenter.y), radius: radius);
 
     final gradient = RadialGradient(
       radius: 0.8,
@@ -269,19 +289,47 @@ class DonutComponent extends PositionComponent {
   }
 }
 
-class TriangleComponent extends PolygonComponent {
+class TriangleComponent extends PolygonComponent
+    with HasGameRef<MyGame>, CollisionCallbacks {
+  
+  late final List<Vector2> points;
+  String? lastItem;
+
   TriangleComponent({
     required Vector2 position,
     double size = 20.0,
     Color color = const Color.fromARGB(255, 103, 84, 51),
   }) : super(
-          [
-            Vector2(0, size),            // Tip (bottom)
-            Vector2(-size, -size),       // Top left
-            Vector2(size, -size),        // Top right
-          ],
+          _buildTriangle(size),
           position: position,
           paint: Paint()..color = color,
           anchor: Anchor.center,
-        );
+        ) {
+    points = _buildTriangle(size);
+  }
+
+  static List<Vector2> _buildTriangle(double size) {
+    return [
+      Vector2(0, size),        // Top
+      Vector2(-size, -size),     // Bottom left
+      Vector2(size, -size),      // Bottom right
+    ];
+  }
+
+  @override
+  FutureOr<void> onLoad() {
+    add(
+      PolygonHitbox(points, position: size/2, anchor: Anchor.center)..debugMode = true,
+    );
+  }
+
+  @override
+  void onCollisionStart(
+      Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollisionStart(intersectionPoints, other);
+    if (other is PizzaSliceComponent) {
+      lastItem = other.tileText;
+      print(lastItem);
+    }
+  }
 }
