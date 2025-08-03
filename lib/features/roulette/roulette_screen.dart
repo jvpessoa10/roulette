@@ -319,7 +319,13 @@ class TriangleComponent extends PolygonComponent
   @override
   FutureOr<void> onLoad() {
     add(
-      PolygonHitbox(points, position: size/2, anchor: Anchor.center)..debugMode = true,
+      PolygonHitbox(
+        [
+      Vector2(0, 40),        // Top
+      Vector2(1, 0),     // Bottom left
+      Vector2(0, 0),      // Bottom right
+    ]
+        , position: size/2, anchor: Anchor.center)..debugMode = true,
     );
   }
 
